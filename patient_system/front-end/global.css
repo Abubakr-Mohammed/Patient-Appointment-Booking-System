@@ -1,0 +1,21 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: #F7F4EF;
+    color: #1C2B3A;
+    min-height: 100vh;
+  }
+  
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+  
+  input, select, textarea {
+    font-family: inherit;
+  }

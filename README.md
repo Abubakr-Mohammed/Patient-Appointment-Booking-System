@@ -2,33 +2,58 @@
 
 A lightweight appointment booking system with a patient-facing booking flow and a physician/admin portal for managing bookings.
 
----
+## What I built
 
-## What it does
+MedBook is a small full-stack appointment booking application with two connected experiences:
 
-**Patient flow** — patients pick a physician, choose an available time slot, fill in their details and reason for visit, review, and submit a booking request.
+- A patient booking flow where users select a physician, pick an available time slot, enter their information and visit reason, review the details, and submit a booking request.
+- A physician/admin portal where staff can view bookings, filter by physician or status, and update booking states from pending to confirmed or cancelled.
 
-**Physician portal** — staff can see all bookings, filter by status or physician, and update each booking's status (pending → confirmed or cancelled).
+The application is intentionally scoped to focus on the core booking workflow, clear UI state management, and a simple API contract rather than production infrastructure.
 
-Booking statuses: `pending` · `confirmed` · `cancelled`
+## How to run the project
 
----
+### Prerequisites
+
+- Node.js 18+
+- npm 9+
+
+### Install dependencies
+
+```bash
+npm run install:all
+```
+
+This installs dependencies for both the frontend and backend projects.
+
+### Start the app in development
+
+```bash
+npm run dev
+```
+
+This starts both apps concurrently:
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| Backend | http://localhost:4000 |
+
+The frontend uses Vite proxying for `/api` requests, so the React app can communicate with the Express backend in development without separate CORS configuration.
 
 ## Tech stack
 
-| Layer    | Technology                        |
-|----------|-----------------------------------|
-| Frontend | React 18, Vite                    |
-| Backend  | Node.js, Express                  |
-| Data     | In-memory mock store (no database)|
+| Layer | Technology |
+|------|------------|
+| Frontend | React 18, Vite |
+| Backend | Node.js, Express |
+| Data | In-memory mock store |
 
-No database, no authentication, no external services — intentionally lightweight.
-
----
+No database, authentication, or external integrations are included by design to keep the implementation lightweight and easy to review.
 
 ## Project structure
 
-```
+```text
 medbook/
 ├── package.json            ← root scripts to run both apps together
 │
@@ -76,64 +101,29 @@ medbook/
             └── global.css
 ```
 
----
-
-## Getting started
-
-### Prerequisites
-
-- Node.js 18+
-- npm 9+
-
-### Install dependencies
-
-```bash
-npm run install:all
-```
-
-This installs packages for both `backend/` and `frontend/`.
-
-### Run in development
-
-```bash
-npm run dev
-```
-
-This starts both servers concurrently:
-
-| App      | URL                        |
-|----------|----------------------------|
-| Frontend | http://localhost:5173       |
-| Backend  | http://localhost:4000       |
-
-Vite proxies all `/api` requests from the frontend to the backend, so there are no CORS issues during development.
-
----
-
 ## API endpoints
 
 ### Physicians
 
-| Method | Path                          | Description                        |
-|--------|-------------------------------|------------------------------------|
-| GET    | `/api/physicians`             | List all physicians                |
-| GET    | `/api/physicians/:id`         | Get a single physician             |
-| GET    | `/api/physicians/:id/slots`   | Get available slots (next 14 days) |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/physicians | List all physicians |
+| GET | /api/physicians/:id | Get a single physician |
+| GET | /api/physicians/:id/slots | Get available slots for the next 14 days |
 
 ### Bookings
 
-| Method | Path                          | Description                        |
-|--------|-------------------------------|------------------------------------|
-| GET    | `/api/bookings`               | List all bookings (filterable)     |
-| GET    | `/api/bookings/:id`           | Get a single booking               |
-| POST   | `/api/bookings`               | Create a new booking               |
-| PATCH  | `/api/bookings/:id/status`    | Update booking status              |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | /api/bookings | List all bookings, with optional filters |
+| GET | /api/bookings/:id | Get a single booking |
+| POST | /api/bookings | Create a new booking |
+| PATCH | /api/bookings/:id/status | Update booking status |
 
-**GET /api/bookings** supports optional query parameters:
-- `?status=pending` — filter by status
-- `?physicianId=p1` — filter by physician
+`GET /api/bookings` supports optional query parameters such as `?status=pending` and `?physicianId=p1`.
 
-**POST /api/bookings** required body fields:
+`POST /api/bookings` expects a payload like:
+
 ```json
 {
   "physicianId": "p1",
@@ -146,23 +136,26 @@ Vite proxies all `/api` requests from the frontend to the backend, so there are 
 }
 ```
 
----
+## Key technical and product decisions
 
-## Key design decisions
+- In-memory data store: The app uses mutable mock data instead of a database so the core booking flow can be demonstrated quickly without persistence setup. This keeps the project easy to run, but bookings reset on server restart.
+- Generated appointment slots: Available slots are created dynamically from physician working days plus simulated gaps. This gives the UI realistic scheduling behavior without needing a real calendar provider.
+- Centralized booking-flow logic: `useBookingFlow.js` owns wizard state, validation, and transitions so presentational components stay simple and easier to test.
+- Centralized API layer: All frontend network calls live in `frontend/src/data/api.js`, which reduces coupling and makes backend changes easier to absorb.
+- Focused product scope: Authentication, notifications, payment, and deployment concerns were deliberately left out so the implementation could stay centered on the booking experience and admin workflow.
 
-**In-memory data store** — `mockData.js` exports mutable arrays that controllers read and write to directly. This means data resets when the server restarts. Swapping in a real database (e.g. PostgreSQL via Prisma) would only require changes to the controller files — the route and frontend layers don't need to change.
+## What I would improve with more time
 
-**Slot generation** — available time slots are generated on request by the `/slots` endpoint, using the physician's working days and random availability gaps to simulate a real calendar. In production this would query a scheduling system.
+- Add persistent storage with a real database such as PostgreSQL and an ORM like Prisma.
+- Introduce authentication and role-based access for patients and clinic staff.
+- Replace simulated slot generation with real calendar availability and conflict handling.
+- Add server-side validation, stronger error states, and automated tests across the API and UI.
+- Improve the admin portal with pagination, search, audit history, and richer booking details.
+- Prepare the app for production with environment-based configuration, logging, and deployment setup.
 
-**Custom hook for booking state** — `useBookingFlow.js` owns all wizard state (current step, selected physician, form values, validation). Pages and components stay thin — they receive data and callbacks as props. This makes each step independently testable.
+## What's intentionally not included
 
-**API layer in one file** — all `fetch` calls live in `frontend/src/data/api.js`. If the backend URL or shape changes, there's one place to update it.
-
----
-
-## What's not included (intentional)
-
-- Authentication / session management
+- Authentication or session management
 - Real calendar integration
 - Email notifications
 - Payment or insurance logic
